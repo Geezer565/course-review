@@ -13,11 +13,14 @@ for s in catalog:
     for l in s['lessons']:
         text=(root/(l['id']+'.md')).read_text(encoding='utf8')
         assert len(re.findall(r'^## ',text,re.M))==l['count'], l['id']
-        figures=json.loads((root/('media-'+l['id']+'.json')).read_text())
-        refs=re.findall(r'<!-- visual:(\d+) -->',text)
-        assert len(refs)==l['count'] and all(n in figures for n in refs),l['id']
-        for n in {refs[0],refs[-1]}:
-            raw=base64.b64decode(figures[n].split(',',1)[1]); Image.open(io.BytesIO(raw)).verify()
+        refs=re.findall(r'<!-- visual:(?:([a-z0-9-]+):)?(\d+) -->',text)
+        assert len(refs)==l['count'],l['id']
+        for source in {source or l['id'] for source,_ in refs}:
+            figures=json.loads((root/('media-'+source+'.json')).read_text())
+            numbers=[n for owner,n in refs if (owner or l['id'])==source]
+            assert all(n in figures for n in numbers),l['id']
+            for n in {numbers[0],numbers[-1]}:
+                raw=base64.b64decode(figures[n].split(',',1)[1]); Image.open(io.BytesIO(raw)).verify()
         total+=l['count']
 assert total==len(index)
 for row in index:

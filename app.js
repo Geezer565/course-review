@@ -31,7 +31,7 @@ function inline(text) {
 }
 function bodyHtml(text) {
   return text.trim().split(/\n\s*\n/).filter(Boolean).map(p=>{
-    if(p.startsWith('<!-- visual:')) { const n = p.match(/visual:(\d+)/)?.[1]; return n ? `<details class="visual" data-page="${n}"><summary>展开图示与公式 · ${n}</summary><div class="figure-content"><p class="figure-loading">展开后加载完整图示。</p></div></details>`:''; }
+    if(p.startsWith('<!-- visual:')) { const match = p.match(/visual:(?:([a-z0-9-]+):)?(\d+)/); const n = match?.[2]; return n ? `<details class="visual" data-page="${n}" data-source="${match[1]||''}"><summary>展开图示与公式</summary><div class="figure-content"><p class="figure-loading">展开后加载完整图示。</p></div></details>`:''; }
     if(/^[-*] /.test(p)) return '<ul>'+p.split('\n').map(l=>`<li>${inline(l.replace(/^[-*] /,''))}</li>`).join('')+'</ul>';
     return `<p>${inline(p)}</p>`;
   }).join('');
@@ -46,7 +46,7 @@ async function lessonPage(s, lesson, section, token) {
   document.title = `${lesson.title} · ${s.name}`;
   app.innerHTML=`<div class="reading-layout"><aside class="sidebar"><a class="back" href="${subjectHref(s.id)}">← ${esc(s.name)}</a><h3>本节目录</h3>${toc}</aside><main id="main" class="reading"><div class="crumbs"><a href="#">全部科目</a> / <a href="${subjectHref(s.id)}">${esc(s.name)}</a></div><div class="eyebrow">${esc(lesson.chapter)}</div><h1>${esc(lesson.title)}</h1><div class="lesson-meta"><span>${blocks.length} 个内容单元</span><span>完整课程笔记</span><a href="${REPO}/edit/main/${lesson.id}.md" target="_blank" rel="noopener">修改笔记 ↗</a></div><details class="mobile-toc"><summary>查看本节目录 · ${blocks.length} 个单元</summary>${toc}</details><p class="notice">正文可搜索、可修改；公式、图表和扫描内容可在每节下方展开阅读。</p>${blocks.map(b=>`<section class="knowledge-section" id="section-${b.id}"><h2><span class="section-number">SECTION · ${String(b.id).padStart(2,'0')}</span>${esc(b.title)}</h2>${bodyHtml(b.body)}</section>`).join('')}<nav class="pager" aria-label="章节翻页">${prev?`<a href="${lessonHref(s.id,prev.id)}">← 上一节<br>${esc(prev.title)}</a>`:`<a href="${subjectHref(s.id)}">← 科目目录</a>`}${next?`<a href="${lessonHref(s.id,next.id)}">下一节 →<br>${esc(next.title)}</a>`:`<a href="${subjectHref(s.id)}">返回科目目录 →</a>`}</nav></main></div>`;
   document.querySelectorAll('details.visual').forEach(details=>details.addEventListener('toggle',()=>{
-    if(details.open&&!details.dataset.loaded) loadFigure(details, lesson.id);
+    if(details.open&&!details.dataset.loaded) loadFigure(details, details.dataset.source || lesson.id);
   }));
   if(section) document.querySelector(`#section-${Number(section)}`)?.scrollIntoView();
 }
