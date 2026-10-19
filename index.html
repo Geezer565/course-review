@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#faf9f5">
+  <meta name="description" content="按科目、章节整理的课程复习知识库。">
+  <title>课内 · 复习知识库</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="topbar">
+    <a class="brand" href="#">课内<span> / 复习知识库</span></a>
+    <nav aria-label="主导航"><button id="search-open" class="search-trigger">搜索知识点 <kbd>/</kbd></button><a href="https://github.com/Geezer565/course-review" target="_blank" rel="noopener">GitHub ↗</a></nav>
+  </header>
+  <div id="app"><main id="main" class="home"><p class="loading">正在打开知识库…</p></main></div>
+  <footer>课内 · 一章一节，慢慢学懂。<span> <a href="#guide">使用说明</a> · <a href="https://github.com/Geezer565/course-review">查看与维护</a></span></footer>
+  <dialog id="search-dialog" aria-labelledby="search-label">
+    <div class="search-head"><label id="search-label" for="search-input">搜索知识库</label><button id="search-close" aria-label="关闭搜索">✕</button></div>
+    <input id="search-input" type="search" placeholder="输入概念、章节或公式关键词…" autocomplete="off">
+    <p id="search-status" role="status">搜索全部科目的标题与正文。</p><div id="search-results"></div>
+  </dialog>
+  <dialog id="image-dialog" aria-label="放大图示"><button id="image-close" aria-label="关闭图示">关闭 ✕</button><img alt="放大的公式与图示"></dialog>
+</body>
+</html>

@@ -7,7 +7,8 @@ catalog = json.loads((root / 'catalog.json').read_text(encoding='utf-8'))
 index = []
 for subject in catalog:
     for lesson in subject['lessons']:
-        text = (root / (lesson['id'] + '.md')).read_text(encoding='utf-8')
+        note = root / (lesson['id'] + '.md')
+        text = note.read_text(encoding='utf-8')
         title = re.search(r'^# (.+)$', text, re.M)
         if title:
             lesson['title'] = title[1].strip()
