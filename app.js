@@ -13,7 +13,7 @@ async function getJson(path) { const response = await fetch(path); if (!response
 function courseCount(s) { return s.lessons.reduce((n,l)=>n+l.count,0); }
 function home() {
   document.title = '课内 · 复习知识库';
-  app.innerHTML = `<main id="main" class="home"><div class="eyebrow">COURSE NOTES · LEARN & REVISIT</div><h1>课内 · 复习知识库</h1><p class="intro">把课上的知识，整理成随时可以翻开的笔记。<br>从一门课开始，沿着章节读下去，也可以搜索一个还没弄懂的概念。</p><hr class="rule"><h2 class="section-title"><span class="section-sign">§1</span>科目目录 <small>${catalog.length} 门课程 · ${catalog.reduce((n,s)=>n+s.lessons.length,0)} 章笔记</small></h2><div class="course-list">${catalog.map(s=>`<a class="course-card" href="${subjectHref(s.id)}"><span class="course-no">VOL · ${esc(s.icon)}</span><h3>${esc(s.name)}</h3><span class="badge ${s.lessons.length?'':'empty'}">${s.lessons.length?s.lessons.length+' 章':'待补充'}</span><span class="course-arrow">↗</span><p>${esc(s.description)}</p></a>`).join('')}</div><section class="guide" id="guide"><h2 class="section-title"><span class="section-sign">§2</span>怎样使用</h2><p>选一门课，按章节和 1.1、1.2 这样的主题小节阅读。同一问题的概念、条件与解题思路已合并；需要推导、例题和图示时，再展开本节资料。顶部搜索可以查找知识点。</p><p>每篇笔记都提供「修改笔记」入口。登录拥有修改权限的 GitHub 账号后保存，网站更新后，各台设备都能看到新内容。</p><p>目前按已有课件整理；没有资料的科目保留入口，后续继续补充。网站不存放原 PDF。</p></section></main>`;
+  app.innerHTML = `<main id="main" class="home"><div class="eyebrow">COURSE NOTES · LEARN & REVISIT</div><h1>课内 · 复习知识库</h1><p class="intro">把课上的知识，整理成随时可以翻开的笔记。<br>从一门课开始，沿着章节读下去，也可以搜索一个还没弄懂的概念。</p><hr class="rule"><h2 class="section-title"><span class="section-sign">§1</span>科目目录 <small>${catalog.length} 门课程 · ${catalog.reduce((n,s)=>n+s.lessons.length,0)} 章笔记</small></h2><div class="course-list">${catalog.map(s=>`<a class="course-card" href="${subjectHref(s.id)}"><span class="course-no">VOL · ${esc(s.icon)}</span><h3>${esc(s.name)}</h3><span class="badge ${s.lessons.length?'':'empty'}">${s.lessons.length?s.lessons.length+' 章':'待补充'}</span><span class="course-arrow">↗</span><p>${esc(s.description)}</p></a>`).join('')}</div><section class="guide" id="guide"><h2 class="section-title"><span class="section-sign">§2</span>怎样使用</h2><p>选一门课，按章节和 1.1、1.2 这样的主题小节阅读。同一问题的概念、条件与解题思路已合并；计算机控制技术的公式、例题和图示可直接在正文阅读；其他科目可展开本节资料。顶部搜索可以查找知识点。</p><p>每篇笔记都提供「修改笔记」入口。登录拥有修改权限的 GitHub 账号后保存，网站更新后，各台设备都能看到新内容。</p><p>目前按已有课件整理；没有资料的科目保留入口，后续继续补充。网站不存放原 PDF。</p></section></main>`;
 }
 function chapters(s) {
   const groups = new Map();
@@ -32,13 +32,18 @@ function subjectPage(s) {
 function inline(text) {
   return esc(text).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>');
 }
-function bodyHtml(text) {
-  return text.trim().split(/\n\s*\n/).filter(Boolean).map(p=>{
+function bodyHtml(text, integrated = false) {
+  return text.trim().split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean).map(p=>{
     if(p.startsWith('<!-- references:')) {
+      if(integrated) return '';
       const match=p.match(/references:([a-z0-9-]+):(\d+)/);
       return match?`<details class="topic-resources" data-reference="${match[1]}" data-topic="${match[2]}"><summary>展开本节补充资料与相关图示</summary><div class="resource-content"><p class="figure-loading">正在打开本节资料…</p></div></details>`:'';
     }
     if(p.startsWith('<!-- visual:')) { const match = p.match(/visual:(?:([a-z0-9-]+):)?(\d+)/); const n = match?.[2]; return n ? `<details class="visual" data-page="${n}" data-source="${match[1]||''}"><summary>展开图示与公式</summary><div class="figure-content"><p class="figure-loading">展开后加载完整图示。</p></div></details>`:''; }
+    if(p.startsWith('$$') && p.endsWith('$$')) return `<div class="math-block">${esc(p)}</div>`;
+    const figure=p.match(/^!\[([^\]]*)\]\((assets\/[a-zA-Z0-9/_-]+\.webp)\)$/);
+    if(figure) return `<figure class="inline-figure"><img src="${figure[2]}" alt="${esc(figure[1])}" loading="lazy" tabindex="0" role="button" aria-label="放大：${esc(figure[1])}"><figcaption>${esc(figure[1])} · 点击放大</figcaption></figure>`;
+    if(p.startsWith('### ')) return `<h3>${inline(p.slice(4))}</h3>`;
     if(/^[-*] /.test(p)) return '<ul>'+p.split('\n').map(l=>`<li>${inline(l.replace(/^[-*] /,''))}</li>`).join('')+'</ul>';
     return `<p>${inline(p)}</p>`;
   }).join('');
@@ -51,7 +56,18 @@ async function lessonPage(s, lesson, section, token) {
   const toc = blocks.map(b=>`<a class="section-link" href="${lessonHref(s.id,lesson.id,b.id)}">${esc(b.title)}</a>`).join('');
   const pos=s.lessons.indexOf(lesson), prev=s.lessons[pos-1], next=s.lessons[pos+1];
   document.title = `${lesson.title} · ${s.name}`;
-  app.innerHTML=`<div class="reading-layout"><aside class="sidebar"><a class="back" href="${subjectHref(s.id)}">← ${esc(s.name)}</a><h3>本节目录</h3>${toc}</aside><main id="main" class="reading"><div class="crumbs"><a href="#">全部科目</a> / <a href="${subjectHref(s.id)}">${esc(s.name)}</a></div><div class="eyebrow">${esc(lesson.chapter)}</div><h1>${esc(lesson.title)}</h1><div class="lesson-meta"><span>${blocks.length} 个主题小节</span><span>按主题归纳</span><a href="${REPO}/edit/main/${lesson.id}.md" target="_blank" rel="noopener">修改笔记 ↗</a></div><details class="mobile-toc"><summary>查看本节目录 · ${blocks.length} 个小节</summary>${toc}</details><p class="notice">同一概念和问题已归并到对应小节。正文用于连贯复习，相关推导、例题和图示可在小节末尾展开。</p>${blocks.map(b=>`<section class="knowledge-section" id="section-${b.id}"><h2>${esc(b.title)}</h2>${bodyHtml(b.body)}</section>`).join('')}<nav class="pager" aria-label="章节翻页">${prev?`<a href="${lessonHref(s.id,prev.id)}">← 上一节<br>${esc(prev.title)}</a>`:`<a href="${subjectHref(s.id)}">← 科目目录</a>`}${next?`<a href="${lessonHref(s.id,next.id)}">下一节 →<br>${esc(next.title)}</a>`:`<a href="${subjectHref(s.id)}">返回科目目录 →</a>`}</nav></main></div>`;
+  app.innerHTML=`<div class="reading-layout"><aside class="sidebar"><a class="back" href="${subjectHref(s.id)}">← ${esc(s.name)}</a><h3>本节目录</h3>${toc}</aside><main id="main" class="reading"><div class="crumbs"><a href="#">全部科目</a> / <a href="${subjectHref(s.id)}">${esc(s.name)}</a></div><div class="eyebrow">${esc(lesson.chapter)}</div><h1>${esc(lesson.title)}</h1><div class="lesson-meta"><span>${blocks.length} 个主题小节</span><span>按主题归纳</span><a href="${REPO}/edit/main/${lesson.id}.md" target="_blank" rel="noopener">修改笔记 ↗</a></div><details class="mobile-toc"><summary>查看本节目录 · ${blocks.length} 个小节</summary>${toc}</details><p class="notice">${lesson.presentation==='integrated'?'公式、推导和例题已放在对应正文中，图示可点击放大。':'同一概念和问题已归并到对应小节。正文用于连贯复习，相关推导、例题和图示可在小节末尾展开。'}</p>${blocks.map(b=>`<section class="knowledge-section" id="section-${b.id}"><h2>${esc(b.title)}</h2>${bodyHtml(b.body,lesson.presentation==='integrated')}</section>`).join('')}<nav class="pager" aria-label="章节翻页">${prev?`<a href="${lessonHref(s.id,prev.id)}">← 上一节<br>${esc(prev.title)}</a>`:`<a href="${subjectHref(s.id)}">← 科目目录</a>`}${next?`<a href="${lessonHref(s.id,next.id)}">下一节 →<br>${esc(next.title)}</a>`:`<a href="${subjectHref(s.id)}">返回科目目录 →</a>`}</nav></main></div>`;
+  if (lesson.presentation === 'integrated') {
+    renderMathInElement(app, {
+      delimiters: [{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}],
+      throwOnError: false, strict: 'ignore', trust: false
+    });
+    app.querySelectorAll('.inline-figure img').forEach(img=>{
+      const zoom=()=>{const d=document.querySelector('#image-dialog');const full=d.querySelector('img');full.src=img.src;full.alt=img.alt;d.showModal();};
+      img.addEventListener('click',zoom);
+      img.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();zoom();}});
+    });
+  }
   document.querySelectorAll('details.visual').forEach(details=>details.addEventListener('toggle',()=>{
     if(details.open&&!details.dataset.loaded) loadFigure(details, details.dataset.source || lesson.id);
   }));

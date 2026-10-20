@@ -10,4 +10,6 @@ names += [lesson['id']+'.md' for subject in catalog for lesson in subject['lesso
 names += [p.name for pattern in ['media-*.json','reference-*.json'] for p in root.glob(pattern)]
 for name in names:
     shutil.copyfile(root/name,target/name)
+for name in ['assets','vendor']:
+    shutil.copytree(root/name,target/name,dirs_exist_ok=True)
 print('Packaged',len(names),'public files')

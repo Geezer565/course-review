@@ -2,3 +2,16 @@
 
 /* Topic-based reading and one shared gallery per subsection. */
 .chapter-list{margin-top:28px}.lesson-row small{display:block;color:var(--blue);font-size:12px;margin-top:10px}.topic-resources{margin-top:24px;border:1px solid var(--line);border-radius:5px;background:#f3f4ee}.topic-resources>summary{padding:12px 16px;cursor:pointer;font-size:13px;color:var(--blue)}.resource-content{padding:0 14px 14px}.gallery-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;padding:8px 0}.gallery-controls button{border:1px solid var(--line);background:var(--paper);border-radius:4px;padding:5px 10px}.gallery-controls button:disabled{opacity:.4;cursor:default}.topic-gallery .visual{margin-top:6px}.topic-gallery img{display:block;max-width:100%;height:auto;cursor:zoom-in}.supplement{margin-top:16px;font-size:13px;line-height:1.9}.supplement summary{color:var(--blue);cursor:pointer}.supplement p{font-size:13px;overflow-wrap:anywhere}.resource-note{color:var(--muted)}.knowledge-section{margin-bottom:48px}.knowledge-section h2{color:var(--blue)}@media(max-width:780px){.lesson-row{padding:16px 14px}.gallery-controls{font-size:11px}.gallery-controls button{font-size:11px;padding:5px 8px}.resource-content{padding:0 10px 10px}.topic-resources>summary{padding:10px 12px}}
+
+/* Formula and figure reading within the existing topic outline. */
+.knowledge-section h3{font-size:1.12rem;margin:2rem 0 .8rem;line-height:1.65;color:var(--ink)}
+.math-block{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:.6rem .25rem;margin:1.3rem 0;background:rgba(128,128,128,.035);border-radius:4px}
+.math-block .katex-display{margin:.4rem 0;text-align:left}
+.math-block .katex-display>.katex{display:inline-block;text-align:left;min-width:100%;padding:.15rem .5rem}
+.reading .katex{font-size:1.06em}
+.knowledge-section p>.katex{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle;padding:.15em 0}
+.inline-figure{margin:1.5rem 0 2rem;max-width:100%}
+.inline-figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:4px;cursor:zoom-in;background:white}
+.inline-figure figcaption{font-family:var(--sans);font-size:.8rem;line-height:1.7;color:var(--muted);margin:.55rem 0}
+.inline-figure img:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:600px){.math-block{font-size:.9rem}.knowledge-section h3{font-size:1.05rem}.inline-figure{margin:1.25rem 0 1.7rem}}
