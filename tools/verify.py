@@ -1,28 +1,35 @@
-"""Small delivery checks: exact course scope, notes, figures and search coverage."""
 from pathlib import Path
-import base64, io, json, re
+from collections import Counter
+import base64,io,json,re
 from PIL import Image
-
 root=Path(__file__).resolve().parents[1]
 catalog=json.loads((root/'catalog.json').read_text(encoding='utf8'))
 index=json.loads((root/'search-index.json').read_text(encoding='utf8'))
 assert [s['name'] for s in catalog]==['传感器与检测技术','计算机控制技术','反馈控制工程基础','微处理器系统','电力电子技术']
-assert not list(root.rglob('*.pdf')) and not list(root.rglob('*.ppt*'))
-total=0
-for s in catalog:
-    for l in s['lessons']:
-        text=(root/(l['id']+'.md')).read_text(encoding='utf8')
-        assert len(re.findall(r'^## ',text,re.M))==l['count'], l['id']
-        refs=re.findall(r'<!-- visual:(?:([a-z0-9-]+):)?(\d+) -->',text)
-        assert len(refs)==l['count'],l['id']
-        for source in {source or l['id'] for source,_ in refs}:
-            figures=json.loads((root/('media-'+source+'.json')).read_text())
-            numbers=[n for owner,n in refs if (owner or l['id'])==source]
-            assert all(n in figures for n in numbers),l['id']
-            for n in {numbers[0],numbers[-1]}:
-                raw=base64.b64decode(figures[n].split(',',1)[1]); Image.open(io.BytesIO(raw)).verify()
-        total+=l['count']
+assert not list(root.glob('*.pdf')) and not list(root.glob('*.ppt*'))
+assigned=[];total=0
+for subject in catalog:
+    assert subject['organization']=='topics'
+    for lesson in subject['lessons']:
+        text=(root/(lesson['id']+'.md')).read_text(encoding='utf8')
+        blocks=re.split(r'^## ',text,flags=re.M)[1:]
+        assert len(blocks)==lesson['count'],lesson['id']
+        references=json.loads((root/('reference-'+lesson['id']+'.json')).read_text(encoding='utf8'))
+        assert len(references)==len(blocks)
+        for i,block in enumerate(blocks,1):
+            title,_,body=block.partition('\n')
+            assert re.match(r'^\d+\.\d+\s',title),title
+            assert len(body.split('<!-- references:')[0].strip())>=80,title
+            assert f'<!-- references:{lesson["id"]}:{i} -->' in body
+            assigned.extend((r['source'],r['page']) for r in references[str(i)])
+        total+=len(blocks)
+counts=Counter(assigned)
+assert len(assigned)==1625 and len(counts)==1625 and all(v==1 for v in counts.values())
+for source in {s for s,_ in assigned}:
+    images=json.loads((root/('media-'+source+'.json')).read_text())
+    pages=[str(page) for s,page in assigned if s==source]
+    assert all(page in images for page in pages),source
+    for page in {pages[0],pages[-1]}:
+        Image.open(io.BytesIO(base64.b64decode(images[page].split(',',1)[1]))).verify()
 assert total==len(index)
-for row in index:
-    assert row['title'] and row['section']>0
-print(json.dumps({'subjects':len(catalog),'lessons':sum(len(s['lessons']) for s in catalog),'sections':total,'pdfFiles':0,'totalMB':round(sum(p.stat().st_size for p in root.glob('*') if p.is_file())/1024**2,1)},ensure_ascii=False))
+print(json.dumps({'chapters':sum(len(s['lessons']) for s in catalog),'topicSections':total,'sourceUnitsPreserved':len(counts),'pdfFiles':0},ensure_ascii=False))

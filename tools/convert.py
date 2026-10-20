@@ -101,6 +101,8 @@ def sources(subject):
             yield p,p.stem,p.stem
 
 def convert():
+    if (OUT/'catalog.json').exists() and any(s.get('organization')=='topics' for s in json.loads((OUT/'catalog.json').read_text(encoding='utf8'))):
+        raise SystemExit('已整理为主题笔记，停止原始逐页导入，避免覆盖整理成果。')
     catalog=[]; search=[]; audit=[]
     for subject in SUBJECTS:
         lessons=[]

@@ -22,10 +22,7 @@ jobs:
         run: python tools/reindex.py
       - uses: actions/configure-pages@v5
       - name: Prepare public files
-        run: |
-          mkdir public
-          cp index.html style.css app.js catalog.json search-index.json .nojekyll public/
-          cp *-*.md media-*.json public/
+        run: python tools/package.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
